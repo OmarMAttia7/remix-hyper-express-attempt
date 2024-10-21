@@ -104,52 +104,54 @@ function responseToReadable(response: Response): Readable {
   return readable;
 }
 
-app.use(build.publicPath, async (req, res) => {
+async function fileExists(filePath: string) {
+  const fileExists = await access(filePath)
+    .then(() => true)
+    .catch(() => false);
+
+  if (!fileExists) {
+    return false;
+  }
+
+  const fileStats = await stat(filePath);
+
+  if (!fileStats.isFile()) {
+    return false;
+  }
+
+  return true;
+}
+
+app.use(build.publicPath, (req, res, next) => {
   if (req.method !== "GET" && req.method !== "HEAD") {
     return;
   }
 
   const filePath = join(build.assetsBuildDirectory, req.path);
 
-  const fileExists = await access(filePath)
-    .then(() => true)
-    .catch(() => false);
+  fileExists(filePath).then((fileExists) => {
+    if (!fileExists) {
+      return next();
+    }
 
-  if (!fileExists) {
-    return;
-  }
-
-  const fileStats = await stat(filePath);
-
-  if (!fileStats.isFile()) {
-    return;
-  }
-
-  return res.sendFile(filePath);
+    return res.sendFile(filePath);
+  });
 });
 
-app.use(async (req, res) => {
+app.use((req, res, next) => {
   if (req.method !== "GET" && req.method !== "HEAD") {
-    return;
+    return next();
   }
 
   const filePath = join("public", req.path);
 
-  const fileExists = await access(filePath)
-    .then(() => true)
-    .catch(() => false);
+  fileExists(filePath).then((fileExists) => {
+    if (!fileExists) {
+      return next();
+    }
 
-  if (!fileExists) {
-    return;
-  }
-
-  const fileStats = await stat(filePath);
-
-  if (!fileStats.isFile()) {
-    return;
-  }
-
-  return res.sendFile(filePath);
+    return res.sendFile(filePath);
+  });
 });
 
 app.all(
