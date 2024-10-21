@@ -124,7 +124,7 @@ async function fileExists(filePath: string) {
 
 app.use(build.publicPath, (req, res, next) => {
   if (req.method !== "GET" && req.method !== "HEAD") {
-    return;
+    return next();
   }
 
   const filePath = join(build.assetsBuildDirectory, req.path);
